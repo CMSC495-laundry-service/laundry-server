@@ -15,8 +15,8 @@ This will be the server for the java application to connect to the database. It 
 
 1. **Clone this repository:**
     ```bash
-    git clone https://github.com/CMSC495-laundry-service/laundry-attendant.git
-    cd laundry-attendant
+    https://github.com/CMSC495-laundry-service/laundry-server.git
+    cd laundry-server
     ```
 
 2. **Download the packages:**
