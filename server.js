@@ -40,7 +40,9 @@ app.post("/createTicket", (req, res) => {
         console.log(obj);
         bcrypt.compare(data.password, obj.password).then(function (result) {
           if (result) {
-            pg.query(`INSERT INTO ticket (price,datereceived,name,phonenum,type,dateextimated,status,username) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, [
+            pg.query(
+              `INSERT INTO ticket (price,datereceived,name,phonenum,type,dateextimated,status,username) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+              [
                 data.price,
                 data.datereceived,
                 data.name,
@@ -48,8 +50,9 @@ app.post("/createTicket", (req, res) => {
                 data.type,
                 data.dateextimated,
                 data.status,
-                data.username
-            ]).then((ticketResult) => {
+                data.username,
+              ]
+            ).then((ticketResult) => {
               res.send("good");
             });
           } else res.status(400).send("Username or password not valid");
@@ -61,8 +64,38 @@ app.post("/createTicket", (req, res) => {
     if (!userFound) res.status(400).send("Username or password not valid");
   });
 });
+app.put("/progressUpdate", (req, res) => {
+  let data = req.body;
+  console.log(data);
+  pg.query(`SELECT * FROM users WHERE username=$1`, [data.username]).then(
+    (response) => {
+      let userData = response.rows;
+      if (userData.length != 0) {
+        //compare with data and the returned encrypted password from the database
+        bcrypt
+          .compare(data.password, userData[0].password)
+          .then(function (result) {
+            if (result) {
+              //if its admin. Update the progress.
+              if (userData[0].isadmin) {
+                pg.query(`UPDATE ticket SET status=$1 WHERE orderid=$2`, [
+                  data.status,
+                  data.ticketId,
+                ]).then((result) => {
+                  res.send("Good");
+                });
+              } else res.status(401).send("Unauthorized");
+            } else res.status(400).send("Username or password is incorrect");
+          });
+      } else {
+        res.status(400).send("Username or password not found");
+      }
+    }
+  );
+});
 app.post("/ticket", (req, res) => {
   let userFound = false;
+  console.log(req.body);
   let data = req.body;
   const query = `SELECT username,password,isadmin FROM users`;
   pg.query(query).then((result) => {
@@ -70,16 +103,15 @@ app.post("/ticket", (req, res) => {
       if (obj.username == data.username) {
         bcrypt.compare(data.password, obj.password).then(function (result) {
           if (result) {
+            console.log(obj);
             if (obj.isadmin) {
               pg.query(`SELECT * FROM ticket`).then((ticketResult) => {
-                console.log(ticketResult);
                 res.send(ticketResult.rows);
               });
             } else {
               pg.query(`Select * FROM ticket WHERE username = $1`, [
                 data.username,
               ]).then((ticketResult) => {
-                console.log("ggg");
                 res.send(ticketResult.rows);
               });
             }
