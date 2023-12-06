@@ -65,6 +65,47 @@ app.post("/createTicket", (req, res) => {
     if (!userFound) res.status(400).send("Username or password not valid");
   });
 });
+app.delete("/deleteTicket", (req, res) => {
+  let data = req.body;
+  console.log(data);
+  pg.query(`SELECT * FROM users WHERE username=$1`, [data.username]).then(
+    (response) => {
+      let userData = response.rows;
+      if (userData.length != 0) {
+        //compare with data and the returned encrypted password from the database
+        bcrypt
+          .compare(data.password, userData[0].password)
+          .then(function (result) {
+            if (result) {
+              //review the spciesfic ticket
+              pg.query(`SELECT status FROM ticket WHERE orderid=$1`, [
+                data.ticketId,
+              ]).then((ticketResult) => {
+                if (ticketResult.rows.length == 0) { 
+                  res.status(400).send("Ticket not found");
+                  return;
+                }
+                if (
+                  ticketResult.rows[0].status != "PENDING"
+                ) {
+                  res.status(400).send("Ticket can only be cancelled if it's pending");
+                  return;
+                } else {
+                  pg.query(`DELETE FROM ticket WHERE orderid=$1`, [
+                    data.ticketId,
+                  ]).then((result) => {
+                    res.send("Good");
+                  });
+                }
+              });
+            } else res.status(400).send("Username or password is incorrect");
+          });
+      } else {
+        res.status(400).send("Username or password not found");
+      }
+    }
+  );
+});
 app.put("/progressUpdate", (req, res) => {
   let data = req.body;
   console.log(data);
@@ -104,13 +145,16 @@ app.post("/ticket", (req, res) => {
           if (result) {
             console.log(obj);
             if (obj.isadmin) {
-              pg.query(`SELECT * FROM ticket ORDER BY status`).then((ticketResult) => {
-                res.send(ticketResult.rows);
-              });
+              pg.query(`SELECT * FROM ticket ORDER BY status`).then(
+                (ticketResult) => {
+                  res.send(ticketResult.rows);
+                }
+              );
             } else {
-              pg.query(`Select * FROM ticket WHERE username = $1 ORDER BY status`, [
-                data.username,
-              ]).then((ticketResult) => {
+              pg.query(
+                `Select * FROM ticket WHERE username = $1 ORDER BY status`,
+                [data.username]
+              ).then((ticketResult) => {
                 res.send(ticketResult.rows);
               });
             }

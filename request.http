@@ -26,3 +26,13 @@ Content-Type: application/json
     "username": "strong",
     "password": "12341234aA"
 }
+
+###
+DELETE http://localhost:3000/deleteTicket
+Content-Type: application/json
+
+{
+    "username": "client",
+    "password": "12341234aA",
+    "ticketId": "15"
+}
