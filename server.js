@@ -41,7 +41,7 @@ app.post("/createTicket", (req, res) => {
         bcrypt.compare(data.password, obj.password).then(function (result) {
           if (result) {
             pg.query(
-              `INSERT INTO ticket (price,datereceived,name,phonenum,type,dateextimated,status,username) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+              `INSERT INTO ticket (price,datereceived,name,phonenum,type,dateextimated,status,username,comment) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
               [
                 data.price,
                 data.datereceived,
@@ -51,6 +51,7 @@ app.post("/createTicket", (req, res) => {
                 data.dateextimated,
                 data.status,
                 data.username,
+                data.comment,
               ]
             ).then((ticketResult) => {
               res.send("good");
@@ -77,14 +78,12 @@ app.put("/progressUpdate", (req, res) => {
           .then(function (result) {
             if (result) {
               //if its admin. Update the progress.
-              if (userData[0].isadmin) {
-                pg.query(`UPDATE ticket SET status=$1 WHERE orderid=$2`, [
-                  data.status,
-                  data.ticketId,
-                ]).then((result) => {
-                  res.send("Good");
-                });
-              } else res.status(401).send("Unauthorized");
+              pg.query(`UPDATE ticket SET status=$1 WHERE orderid=$2`, [
+                data.status,
+                data.ticketId,
+              ]).then((result) => {
+                res.send("Good");
+              });
             } else res.status(400).send("Username or password is incorrect");
           });
       } else {
@@ -105,11 +104,11 @@ app.post("/ticket", (req, res) => {
           if (result) {
             console.log(obj);
             if (obj.isadmin) {
-              pg.query(`SELECT * FROM ticket`).then((ticketResult) => {
+              pg.query(`SELECT * FROM ticket ORDER BY status`).then((ticketResult) => {
                 res.send(ticketResult.rows);
               });
             } else {
-              pg.query(`Select * FROM ticket WHERE username = $1`, [
+              pg.query(`Select * FROM ticket WHERE username = $1 ORDER BY status`, [
                 data.username,
               ]).then((ticketResult) => {
                 res.send(ticketResult.rows);
